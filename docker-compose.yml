@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+
+  tvisualization:
+    restart: "no"
+    build:
+      context: ./visualization_app
+      dockerfile: Dockerfile
+    ports:
+      - "80:8000"
+    volumes:
+      - ./visualization_app:/app

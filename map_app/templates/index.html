@@ -1,0 +1,429 @@
+
+<!DOCTYPE html>
+<html>
+
+
+    <head>
+        <meta charset=utf-8 />
+        <title>Tesloop Vehicle Visualization</title>
+        <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+        <!-- Calendar picker -->
+        <script type="text/javascript" src="//cdn.jsdelivr.net/jquery/1/jquery.min.js"></script>
+        <script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap/latest/css/bootstrap.css" />
+        <!-- Include Date Range Picker -->
+        <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+        <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+        <!-- Mapbox -->
+        <script src='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.js'></script>
+        <link href='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.css' rel='stylesheet' />
+        <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.21.0/mapbox-gl.js'></script>
+        <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.21.0/mapbox-gl.css' rel='stylesheet' />
+        <!-- Turf -->
+        <script src='https://api.mapbox.com/mapbox.js/plugins/turf/v2.0.2/turf.min.js'></script>
+        <!-- jquery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+        <style>
+          body { margin:0; padding:0; }
+          #map { position:absolute; top:0; bottom:0; width:100%; } /*position:absolute; */
+        #datetimepicker { position:absolute; top:30px; left:30px}
+
+        .mapboxgl-popup {
+            max-width: 400px;
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .filter-group {
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            font-weight: 600;
+            position: absolute;
+            top: 30px;
+            right: 10px;
+            z-index: 1;
+            border-radius: 3px;
+            width: 160px;
+            color: #fff;
+        }
+
+        .filter-group input[type=checkbox]:first-child + label {
+            border-radius: 1px 3px 0 0;
+        }
+
+        .filter-group label:last-child {
+            border-radius: 0 0 3px 3px;
+            border: none;
+        }
+
+        .filter-group input[type=checkbox] {
+            display: none;
+        }
+
+        .filter-group input[type=checkbox] + label {
+            background-color: #3386c0;
+            display: block;
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+        }
+
+        .filter-group input[type=checkbox] + label {
+            background-color: #3386c0;
+            text-transform: capitalize;
+        }
+
+        /*.filter-group input[type=checkbox] + label:hover,*/
+        .filter-group input[type=checkbox]:checked + label {
+            background-color: #4ea0da;
+        }
+
+        .overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+        }
+
+        .overlay button {
+            font:600 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            background-color: #3386c0;
+            color: #fff;
+            display: inline-block;
+            margin: 0;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .overlay button:hover {
+            background-color:#4ea0da;
+        }
+
+        </style>
+
+    </head>
+
+
+    <body>
+
+        <div id='map'></div>
+        <div id='filter-group' class='filter-group'>
+            <input type='checkbox' id='1129095010' checked='true'> </input>
+            <label for='1129095010' id='date_time_1129095010'> Tesla_1129095010 </label>
+            <input type='checkbox' id='2147191014' checked='true'> </input>
+            <label for='2147191014' id='date_time_2147191014'> Tesla_2147191014 </label>
+        </div>
+        <div id="datetimepicker" >
+                <input type=text name=daterange placeholder='2016-06-02 12:00:00 - 2016-06-03 12:00:00' size=40>
+                <input id='submit_daterange' type="button" value="Submit">
+        </div>
+        <div class='overlay'>
+            <button id='replay'>Replay</button>
+        </div>
+
+    </body>
+
+    <script>
+
+        // L.mapbox.accessToken = 'pk.eyJ1IjoiYWxlZTcxMzUiLCJhIjoiY2lyOGE0eTduMDB5NGdmbTk3aHh4anJpZyJ9.SxUG-jsnrR3BJ60oAnLUQw';
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGVzbG9vcCIsImEiOiI4MzFiNjA3NjI2OGQ3NzYwMjk0Y2MyZjZjNzRhZGU2OCJ9.xrSqBZlOYnLBbjDTzdnK3A';
+        
+        var layerIDs = []; // will contain a list used to filter against
+        var filterInput = document.getElementById('filter_input'); // gets the user input
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/alee7135/cis3z9egu0013gom3x8xxohjn', //'mapbox://styles/mapbox/streets-v9',
+            center: [-118.2437, 34.0522],
+            zoom: 8
+        });
+
+
+        // When a click event occurs near a place, open a popup at the location of
+        // the feature, with description HTML from its properties.
+        map.on('click', function (e) {
+            // the 2nd argument restricts features to places layer
+            var features = map.queryRenderedFeatures(e.point, { layers: ['point_1129095010', 'point_2147191014'] });
+
+            // if user clicks nothing, we return nothing (no popup)
+            if (!features.length) {
+                return;
+            }
+            // first and only feature
+            var feature = features[0];
+            // Populate the popup and set its coordinates
+            // based on the feature found.
+            var popup = new mapboxgl.Popup()
+                .setLngLat(feature.geometry.coordinates)
+                .setHTML(feature.properties.descriptions)
+                .addTo(map);
+        });
+
+        // Use the same approach as above to indicate that the symbols are clickable
+        // by changing the cursor style to 'pointer'.
+        map.on('mousemove', function (e) {
+            var features = map.queryRenderedFeatures(e.point, { layers: ['point_1129095010', 'point_2147191014'] });
+            map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
+        });
+
+
+        //******* ADD DATA SOURCES
+        map.on('load', function() {
+            map.addSource('point_1129095010',{
+                "type": "geojson",
+                "data": {}
+            })
+            map.addSource('point_2147191014',{
+                "type": "geojson",
+                "data": {}
+            })
+        });
+
+
+        // Main function which interacts with Flask to get json data from the Tesla API
+        var requestId_1129095010;
+        var requestId_2147191014;
+
+        $(document).ready(function() {
+        $('#submit_daterange').click(function() {
+          $.getJSON('/maps/data', {
+            daterange: $('input[name="daterange"]').val(),
+          }, function(data) {
+            var counter_1129095010 = 0; // for animation
+            var counter_2147191014 = 0;
+            var point_places_1129095010 = data.vehicles['1129095010'].point_geojson
+            var point_places_2147191014 = data.vehicles['2147191014'].point_geojson
+            var line_places = data.line_geojson
+            var timestamp_list_1129095010 = data.vehicles['1129095010'].timestamp_list
+            var timestamp_list_2147191014 = data.vehicles['2147191014'].timestamp_list
+            var date_time_1129095010 = data.vehicles['1129095010'].date_time
+            var date_time_2147191014 = data.vehicles['2147191014'].date_time
+
+            console.log(requestId_1129095010)
+            stop_1129095010()
+            stop_2147191014()
+
+            // Initialize the first point location for each car if it exists
+            // 1129095010
+            if (point_places_1129095010.features.length !== 0) {
+                $('#date_time_1129095010').text("Tesla 1129095010 ")
+                var origin_1129095010 = point_places_1129095010['features'][0]
+                var destination_1129095010 = point_places_1129095010['features'].slice(-1)[0]
+                // Coordinates are initially set to origin.
+                var point_1129095010 = {
+                    "type": "FeatureCollection",
+                    "features": [origin_1129095010]
+                }
+
+                map.getSource('point_1129095010').setData(point_1129095010)
+
+                map.addLayer({
+                    "id": "point_1129095010",
+                    "type": "circle",
+                    "source": "point_1129095010",
+                    "paint": {
+                        'circle-radius': 10,
+                        "circle-opacity": 0.5,
+                        'circle-color': {
+                            property: 'vehicle_state',
+                            type: 'categorical',
+                            stops: [
+                                ['notplugged_inuse', '#ffff00'],
+                                ['notplugged_sitting', '#ff0000'],
+                                ['notplugged_full', '#00cc00'],
+                                ['plugged_notfull', '#0000ff'],
+                                ['plugged_full', '#00cc00'],
+                                ['other', '#000000']
+                            ]
+                        }
+                    },
+                    "filter": ["==", "vehicle_id", "1129095010"]
+                });
+            };
+
+            // 2147191014
+            if (point_places_2147191014.features.length !== 0) {
+                $('#date_time_2147191014').text("Tesla 2147191014 ")
+                var origin_2147191014 = point_places_2147191014['features'][0]
+                var destination_2147191014 = point_places_2147191014['features'].slice(-1)[0]
+                // Coordinates are initially set to origin.
+                var point_2147191014 = {
+                    "type": "FeatureCollection",
+                    "features": [origin_2147191014]
+                }
+
+                map.getSource('point_2147191014').setData(point_2147191014)
+
+                map.addLayer({
+                    "id": "point_2147191014",
+                    "type": "circle",
+                    "source": "point_2147191014",
+                    "paint": {
+                        'circle-radius': 10,
+                        "circle-opacity": 0.5,
+                        'circle-color': {
+                            property: 'vehicle_state',
+                            type: 'categorical',
+                            stops: [
+                                ['plugged_notfull', '#0000ff'],
+                                //blue
+                                ['plugged_full', '#6600cc'],
+                                //purple
+                                ['notplugged_full', '#00cc00'],
+                                //green
+                                ['notplugged_sitting', '#ff0000'],
+                                //red
+                                ['notplugged_inuse', '#ffff00'],
+                                //yellow
+                                ['other', '#000000']
+                            ]
+                        }
+
+                    },
+                    "filter": ["==", "vehicle_id", "2147191014"]
+                });
+            };
+
+            // Code to Visualize Lines (dont really need but its here)
+            // map.addSource('line_places',{
+            //     "type": "geojson",
+            //     "data": line_places
+            // });
+
+            // map.addLayer({
+            //     "id": "line_1129095010",
+            //     "type": "line",
+            //     "source": "line_places",
+            //     "layout": {
+            //         "line-join": "round",
+            //         "line-cap": "round"
+            //     },
+            //     "paint": {
+            //         "line-color": "black",
+            //         "line-width": 6
+            //     },
+            //     "filter": ["==", "vehicle_id", "1129095010"]
+            // });
+
+            // map.addLayer({
+            //     "id": "line_2147191014",
+            //     "type": "line",
+            //     "source": "line_places",
+            //     "layout": {
+            //         "line-join": "round",
+            //         "line-cap": "round"
+            //     },
+            //     "paint": {
+            //         "line-color": "black",
+            //         "line-width": 6
+            //     },
+            //     "filter": ["==", "vehicle_id", "2147191014"]
+            // });
+
+
+            function stop_1129095010() {
+                // Stop animation for veh 1129095010
+                if (requestId_1129095010) {
+                   window.cancelAnimationFrame(requestId_1129095010);
+                   requestId_1129095010 = undefined;
+                }
+            }
+            function stop_2147191014() {
+                // Stop animation for veh 2147191014
+                if (requestId_2147191014) {
+                   window.cancelAnimationFrame(requestId_2147191014);
+                   requestId_2147191014 = undefined;
+                }
+            }
+
+            function animate_1129095010() {
+                setTimeout(function() {
+                    // Update geojson variable point_1129095010 with next point in route
+                    point_1129095010.features[counter_1129095010] = point_places_1129095010.features[counter_1129095010]
+                    // console.log(point_1129095010.features[counter])
+                    // Set data in point source
+                    map.getSource('point_1129095010').setData(point_1129095010)
+                    $('#date_time_1129095010').text("Tesla 1129095010: " + "\n" + date_time_1129095010[counter_1129095010])
+                    if (point_1129095010.features[counter_1129095010] !== destination_1129095010) {
+                        requestId_1129095010 = window.requestAnimationFrame(animate_1129095010)
+                    }
+                }, counter_1129095010)  // number of milliseconds to pass
+                counter_1129095010 += 1
+            }
+
+            function animate_2147191014() {
+                setTimeout(function() {
+                    // Update geojson variable point_1129095010 with next point in route
+                    point_2147191014.features[counter_2147191014] = point_places_2147191014.features[counter_2147191014]
+                    // Set data in point source
+                    map.getSource('point_2147191014').setData(point_2147191014)
+                    $('#date_time_2147191014').text("Tesla 2147191014: " + "\n" + date_time_2147191014[counter_2147191014])
+                    if (point_2147191014.features[counter_2147191014] !== destination_2147191014) {
+                        requestId_2147191014 =
+                        window.requestAnimationFrame(animate_2147191014)
+                    }
+                }, counter_2147191014)  // number of milliseconds to pass
+                counter_2147191014 += 1
+            }
+
+            document.getElementById('replay').addEventListener('click', function() {
+                    if (requestId_1129095010) {
+                        window.cancelAnimationFrame(requestId_1129095010)
+                        requestId_1129095010 = undefined
+                    } else if (requestId_2147191014) {
+                        window.cancelAnimationFrame(requestId_2147191014)
+                        requestId_2147191014 = undefined
+                    } else {
+                        if (point_places_1129095010.features.length !== 0) {
+                            // Each time we run this simulation, we want to make sure to reset the var point back to origin
+                            $('#date_time_1129095010').text("Tesla 1129095010: ")
+                            point_1129095010.features = []
+                            point_1129095010.features[0] = origin_1129095010
+                            // Update the source layer
+                            map.getSource('point_1129095010').setData(point_1129095010)
+                            // Reset counter
+                            counter_1129095010 = 0
+                            // Restart the animation.
+                            animate_1129095010();
+                        }
+                        if (point_places_2147191014.features.length !== 0) {
+                            // Each time we run this simulation, we want to make sure to reset the var point back to origin
+                            $('#date_time_2147191014').text("Tesla 2147191014: ")
+                            point_2147191014.features = []
+                            point_2147191014.features[0] = origin_2147191014
+                            // Update the source layer
+                            map.getSource('point_2147191014').setData(point_2147191014)
+                            // Reset counter
+                            counter_2147191014 = 0
+                            // Restart the animation.
+                            animate_2147191014();
+                    }
+
+                    }
+
+            })
+
+
+            // Vehicle Filter Feature
+            var vehicle_ids = ['1129095010','2147191014']
+
+            vehicle_ids.forEach(function(id) {
+                // When the checkbox changes, update the visibility of the layer.
+                // if input is checked, then layerID is visible, else not visible
+                var input = document.getElementById(id)
+                input.addEventListener('change', function(e) {
+                    map.setLayoutProperty('point_'+id, 'visibility',
+                        e.target.checked ? 'visible' : 'none');
+                    map.setLayoutProperty('line_'+id, 'visibility',
+                        e.target.checked ? 'visible' : 'none');
+                })
+
+                })
+            })
+          return false;
+        })
+    }); 
+    </script>
+
+</html>

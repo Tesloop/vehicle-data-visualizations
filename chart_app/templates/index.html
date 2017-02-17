@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Page Title</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+        <script src="https://code.highcharts.com/stock/highstock.js"></script>
+        <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    </head>
+        <style>
+            #submit { position:absolute; top:20px; right:325px}
+            .chart {
+                min-width: 320px;
+                max-width: 800px;
+                height: 220px;
+                margin: 0 auto;
+            }
+        </style>
+
+    <body>
+        <div id="container1" style="height: 400px; min-width: 310px"></div>
+        <div id="container2" style="height: 400px; min-width: 310px"></div>
+        <div id="container3" style="height: 400px; min-width: 310px"></div>
+        <!-- <input id='submit' type="button" value="Submit"> -->
+    </body>
+
+    <script>
+    //  Create the chart when all data is loaded
+        $(function () {
+            Highcharts.setOptions({
+                chart: {
+                    style: {
+                        fontFamily: 'serif'
+                    }
+                }
+            });
+        // Declare global chart variables seriesOptions list
+            seriesOptions1 = []
+            chart1_names = ['batt_range_plugged_incomplete', 'batt_range_plugged_complete', 'batt_range_unplugged_complete', 'batt_range_unplugged_inuse','batt_range_unplugged_sitting','speed', 'temp',
+            'battery_current', 'charger_power', 'station_location']
+            seriesOptions2 = []
+            chart2_names = ['speed','temp']
+            seriesOptions3 = []
+            chart3_names = ['charger_actual_current', 'charger_voltage']
+
+            my_charts = [chart1_names, chart2_names, chart3_names]
+            seriesOptions = [seriesOptions1, seriesOptions2, seriesOptions3]
+
+            function createChart1() {
+                // console.log(seriesOptions)
+                $('#container1').highcharts('StockChart', {
+                        type: 'datetime',
+                        title: {
+                            text: 'Vehicle State',
+                            y: 30
+                        },
+                        legend: {
+                            enabled: true
+                        },
+                // Vehicle Range (either estimated or normal range)
+                    yAxis: [{
+                        tickPixelInterval: 40,
+                        labels: {
+                            formatter: function () {
+                        return this.value + ' Miles';
+                    }
+                        },
+                        plotLines: [{
+                            value: 0,
+                            width: 2,
+                            color: 'silver'
+                        }],
+                    title: {
+                        text: 'Vehicle Range',
+                        style: {
+                            // color: Highcharts.getOptions().colors[2]
+                        }
+                    },
+                    showEmpty: false,
+                    opposite: false // left side
+                },// Vehicle Speed
+                    {   tickPixelInterval: 40,
+                        labels: {
+                            formatter: function () {
+                        return this.value + ' MPH';
+                    }
+                        },
+                        plotLines: [{
+                            value: 0,
+                            width: 2,
+                            color: 'silver'
+                        }],
+                    title: {
+                        text: 'Vehicle Speed',
+                        style: {
+                            // color: Highcharts.getOptions().colors[2]
+                        }
+                    },
+                    showEmpty: false,
+                    opposite: true // left side
+                },
+                // Vehicle Temp
+                {   tickPixelInterval: 40,
+                    labels: {
+                        formatter: function () {
+                    return this.value + ' C';
+                        }
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 2,
+                        color: 'silver'
+                    }],
+                title: {
+                    text: 'Outside Temp/ Inside Temp Delta',
+                    style: {
+                        // color: Highcharts.getOptions().colors[2]
+                    }
+                },
+                showEmpty: false,
+                opposite: true // right side
+            }, // Battery Current
+                {   tickPixelInterval: 40,
+                    labels: {
+                        formatter: function () {
+                    return this.value + ' Amps';
+                }
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 2,
+                        color: 'silver'
+                    }],
+                title: {
+                    text: 'Battery Current',
+                    style: {
+                        // color: Highcharts.getOptions().colors[2]
+                    }
+                },
+                showEmpty: false,
+                opposite: true // left side
+            },
+            // Charging Power
+            {   tickPixelInterval: 40,
+                labels: {
+                    formatter: function () {
+                return this.value + ' KW';
+            }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 2,
+                    color: 'silver'
+                }],
+            title: {
+                text: 'Charging Power',
+                style: {
+                    // color: Highcharts.getOptions().colors[2]
+                }
+            },
+            showEmpty: false,
+            opposite: true // right side
+        }],
+                xAxis:{
+                        gridLineWidth: 1,
+                        minorGridLineWidth: 1,
+                },
+                plotOptions: {
+                    series: {
+                        marker: {
+                            enabled: true
+                        }
+                    }
+                },
+                tooltip: {
+                    // formatter: function() {
+                    //   var s = '';
+                    //   $.each(this.points, function(i, point) {
+                    //     console.log(point.series.userOptions.data)
+                    //     s += '<br /><span style="color:' + this.series.color + '">' +
+                    //          point.series.userOptions.name + '</span>: ' + '<b>' + point.y + '</b>'
+                    //   });
+                    //   return s;
+                    // },
+                    // pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>', //({point.change}%)<br/>
+                    valueDecimals: 2,
+                    shared : true
+                },
+                series: seriesOptions1,
+                scrollbar:{
+                   liveRedraw: false
+                },
+            });
+        }
+            function createChart2() {
+                $('#container2').highcharts('StockChart', {
+                        type: 'datetime',
+                        title: {
+                            text: 'Factors Impacting Battery Range',
+                            y: 30
+                        },
+                        legend: {
+                            enabled: true
+                        },
+                    yAxis: [
+                    // Vehicle Speed
+                        {   tickPixelInterval: 40,
+                            labels: {
+                                formatter: function () {
+                            return this.value + ' MPH';
+                        }
+                            },
+                            plotLines: [{
+                                value: 0,
+                                width: 2,
+                                color: 'silver'
+                            }],
+                        title: {
+                            text: 'Vehicle Speed',
+                            style: {
+                                // color: Highcharts.getOptions().colors[2]
+                            }
+                        },
+                        opposite: false // left side
+                    },
+                    // Vehicle Temp
+                    {   tickPixelInterval: 40,
+                        labels: {
+                            formatter: function () {
+                        return this.value + ' C';
+                    }
+                        },
+                        plotLines: [{
+                            value: 0,
+                            width: 2,
+                            color: 'silver'
+                        }],
+                    title: {
+                        text: 'Outside Temp/ Inside Temp Delta',
+                        style: {
+                            // color: Highcharts.getOptions().colors[2]
+                        }
+                    },
+                    opposite: true // right side
+                }],
+                    xAxis:{
+                        gridLineWidth: 1,
+                        minorGridLineWidth: 1,
+                    },
+                    plotOptions: {
+                        series: {
+                            // compare: 'percent'
+                        }
+                    },
+                    tooltip: {
+                        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/> ', //({point.change}%)<br/>
+                        valueDecimals: 2
+                    },
+                    series: seriesOptions2,
+                    scrollbar:{
+                       liveRedraw: false
+                    },
+                });
+            }
+            function createChart3() {
+                $('#container3').highcharts('StockChart', {
+                        type: 'datetime',
+                        title: {
+                            text: 'Charging State',
+                            y: 30
+                        },
+                        legend: {
+                            enabled: true
+                        },
+                    yAxis: [
+                    // Charger Current
+                        {   tickPixelInterval: 40,
+                            labels: {
+                                formatter: function () {
+                            return this.value + ' Amps';
+                        }
+                            },
+                            plotLines: [{
+                                value: 0,
+                                width: 2,
+                                color: 'silver'
+                            }],
+                        title: {
+                            text: 'Charge Current',
+                            style: {
+                                // color: Highcharts.getOptions().colors[2]
+                            }
+                        },
+                        opposite: false // left side
+                    },
+                    // Charger Voltage
+                    {   tickPixelInterval: 40,
+                        labels: {
+                            formatter: function () {
+                        return this.value + ' Volts';
+                    }
+                        },
+                        plotLines: [{
+                            value: 0,
+                            width: 2,
+                            color: 'silver'
+                        }],
+                    title: {
+                        text: 'Charge Voltage',
+                        style: {
+                            // color: Highcharts.getOptions().colors[2]
+                        }
+                    },
+                    opposite: true // right side
+                }],
+                    xAxis:{
+                        gridLineWidth: 1,
+                        minorGridLineWidth: 1,
+                    },
+                    plotOptions: {
+                        series: {
+                            // compare: 'percent'
+                        }
+                    },
+                    tooltip: {
+                        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/> ', //({point.change}%)<br/>
+                        valueDecimals: 2
+                    },
+                    series: seriesOptions3,
+                    scrollbar:{
+                       liveRedraw: false
+                    },
+                });
+            }
+            createChart = [createChart1, createChart2, createChart3]
+
+            // First initialize the chart but it doesnt have real data yet
+            $.getJSON('/input', function(data) {
+                var est_batt_range = data.est_batt_range
+                var batt_range = data.batt_range
+                var batt_range_plugged_incomplete = data.batt_range_plugged_incomplete
+                var batt_range_plugged_complete = data.batt_range_plugged_complete
+                var batt_range_unplugged_complete = data.batt_range_unplugged_complete
+                var batt_range_unplugged_inuse = data.batt_range_unplugged_inuse
+                var batt_range_unplugged_sitting = data.batt_range_unplugged_sitting
+
+                var speed = data.speed
+                var charger_actual_current = data.charger_actual_current
+                var charger_pilot_current = data.charger_pilot_current
+                var charger_power = data.charger_power
+                var charger_voltage = data.charger_voltage
+                var battery_current = data.battery_current
+                var temp = data.temp
+
+                var station_location = data.station_location
+
+                // create a data list so we can loop through
+                var data_series1 = [batt_range_plugged_incomplete,
+                                    batt_range_plugged_complete,
+                                    batt_range_unplugged_complete,
+                                    batt_range_unplugged_inuse,
+                                    batt_range_unplugged_sitting,
+                                    speed, temp,
+                                    battery_current,
+                                    charger_power,
+                                    station_location] // show vehicle state
+                var yAxis_label1 = [0,0,0,0,0,1,2,3,4,0]
+                var data_series2 = [speed, temp] // show vehicle in drive
+                var yAxis_label2 = [0,1]
+                var data_series3 = [charger_actual_current, charger_voltage] // show vehicle in charge
+                var yAxis_label3 = [0,1]
+
+                var data_series = [data_series1, data_series2, data_series3]
+                var yAxis_label = [yAxis_label1, yAxis_label2, yAxis_label3]
+                var chart_type = ['area','spline','spline']
+
+
+                $.each(my_charts, function (i, chart_name) {
+                    seriesCounter = 0
+                    $.each(chart_name, function (j, name) {
+                        if (name=='batt_range_plugged_incomplete'){
+                            seriesOptions[i][j] = {
+                                id: 'dataseries',
+                                dashStyle: 'ShortDash',
+                                name: name,
+                                type: chart_type[i],
+                                fillOpacity: 0.3,
+                                marker:{enabled:false},
+                                data: data_series[i][j],
+                                yAxis: yAxis_label[i][j],
+                                color: 'blue', // #006600
+                                turboThreshold: 0
+                            }
+                        } else if (name=='batt_range_plugged_complete'){
+                            seriesOptions[i][j] = {
+                                dashStyle: 'ShortDash',
+                                name: name,
+                                type: chart_type[i],
+                                fillOpacity: 0.3,
+                                marker:{enabled:false},
+                                data: data_series[i][j],
+                                yAxis: yAxis_label[i][j],
+                                color: 'green', // #006600
+                                turboThreshold: 0
+                            }
+                        } else if (name=='batt_range_unplugged_complete'){
+                            seriesOptions[i][j] = {
+                                name: name,
+                                type: chart_type[i],
+                                fillOpacity: 0.3,
+                                lineWidth: 0,
+                                marker:{enabled:false},
+                                data: data_series[i][j],
+                                yAxis: yAxis_label[i][j],
+                                color: 'green', // #006600
+                                turboThreshold: 0
+                            }
+                        } else if (name=='batt_range_unplugged_inuse'){
+                            seriesOptions[i][j] = {
+                                name: name,
+                                type: chart_type[i],
+                                fillOpacity: 0.3,
+                                lineWidth: 0,
+                                marker:{enabled:false},
+                                data: data_series[i][j],
+                                yAxis: yAxis_label[i][j],
+                                color: 'yellow', // #006600
+                                turboThreshold: 0
+                            }
+                        } else if (name=='batt_range_unplugged_sitting'){
+                            seriesOptions[i][j] = {
+                                name: name,
+                                type: chart_type[i],
+                                fillOpacity: 0.3,
+                                lineWidth: 0,
+                                marker:{enabled:false},
+                                data: data_series[i][j],
+                                yAxis: yAxis_label[i][j],
+                                color: 'red', // #006600
+                                turboThreshold: 0
+                            }
+                        } else if (name=='station_location'){
+                            // console.log(data_series[i][j])
+                            seriesOptions[i][j] = {
+                                name: 'station_location',
+                                type: 'flags',
+                                data: data_series[i][j],
+                                onSeries : 'dataseries',
+                                shape : 'circlepin',
+                                width : 16,
+                                turboThreshold: 0
+                            }
+                        } else {
+                            seriesOptions[i][j] = {
+                                name: name,
+                                type: 'spline',
+                                data: data_series[i][j],
+                                yAxis: yAxis_label[i][j],
+                                turboThreshold: 0
+                            }
+                        }
+                        // console.log(seriesOptions[i][j])
+                        // console.log(chart_name.length)
+                        // console.log(seriesCounter)
+                        seriesCounter += 1;
+                        if (seriesCounter === chart_name.length) {
+                            createChart[i]();
+                            // alert('hello')
+                        }
+                    })
+                })
+
+
+            })
+    });
+
+    // Load the fonts
+    Highcharts.createElement('link', {
+       href: 'https://fonts.googleapis.com/css?family=Unica+One',
+       rel: 'stylesheet',
+       type: 'text/css'
+    }, null, document.getElementsByTagName('head')[0]);
+    Highcharts.theme = {
+       colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee",
+          "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+       chart: {
+          backgroundColor: {
+             linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },
+             stops: [
+                [0, '#2a2a2b'],
+                [1, '#3e3e40']
+             ]
+          },
+          style: {
+             fontFamily: "'Unica One', sans-serif"
+          },
+          plotBorderColor: '#606063'
+       },
+       title: {
+          style: {
+             color: '#E0E0E3',
+             textTransform: 'uppercase',
+             fontSize: '20px'
+          }
+       },
+       subtitle: {
+          style: {
+             color: '#E0E0E3',
+             textTransform: 'uppercase'
+          }
+       },
+       xAxis: {
+          gridLineColor: '#707073',
+          labels: {
+             style: {
+                color: '#E0E0E3'
+             }
+          },
+          lineColor: '#707073',
+          minorGridLineColor: '#505053',
+          tickColor: '#707073',
+          title: {
+             style: {
+                color: '#A0A0A3'
+             }
+          }
+       },
+       yAxis: {
+          gridLineColor: '#707073',
+          labels: {
+             style: {
+                color: '#E0E0E3'
+             }
+          },
+          lineColor: '#707073',
+          minorGridLineColor: '#505053',
+          tickColor: '#707073',
+          tickWidth: 1,
+          title: {
+             style: {
+                color: '#A0A0A3'
+             }
+          }
+       },
+       tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          style: {
+             color: '#F0F0F0'
+          }
+       },
+       plotOptions: {
+          series: {
+             dataLabels: {
+                color: '#B0B0B3'
+             },
+             marker: {
+                lineColor: '#333'
+             }
+          },
+          boxplot: {
+             fillColor: '#505053'
+          },
+          candlestick: {
+             lineColor: 'white'
+          },
+          errorbar: {
+             color: 'white'
+          }
+       },
+       legend: {
+          itemStyle: {
+             color: '#E0E0E3'
+          },
+          itemHoverStyle: {
+             color: '#FFF'
+          },
+          itemHiddenStyle: {
+             color: '#606063'
+          }
+       },
+       credits: {
+          style: {
+             color: '#666'
+          }
+       },
+       labels: {
+          style: {
+             color: '#707073'
+          }
+       },
+       drilldown: {
+          activeAxisLabelStyle: {
+             color: '#F0F0F3'
+          },
+          activeDataLabelStyle: {
+             color: '#F0F0F3'
+          }
+       },
+       navigation: {
+          buttonOptions: {
+             symbolStroke: '#DDDDDD',
+             theme: {
+                fill: '#505053'
+             }
+          }
+       },
+       // scroll charts
+       rangeSelector: {
+          buttonTheme: {
+             fill: '#505053',
+             stroke: '#000000',
+             style: {
+                color: '#CCC'
+             },
+             states: {
+                hover: {
+                   fill: '#707073',
+                   stroke: '#000000',
+                   style: {
+                      color: 'white'
+                   }
+                },
+                select: {
+                   fill: '#000003',
+                   stroke: '#000000',
+                   style: {
+                      color: 'white'
+                   }
+                }
+             }
+          },
+          inputBoxBorderColor: '#505053',
+          inputStyle: {
+             backgroundColor: '#333',
+             color: 'silver'
+          },
+          labelStyle: {
+             color: 'silver'
+          }
+       },
+       navigator: {
+          handles: {
+             backgroundColor: '#666',
+             borderColor: '#AAA'
+          },
+          outlineColor: '#CCC',
+          maskFill: 'rgba(255,255,255,0.1)',
+          series: {
+             color: '#7798BF',
+             lineColor: '#A6C7ED'
+          },
+          xAxis: {
+             gridLineColor: '#505053'
+          }
+       },
+       scrollbar: {
+          barBackgroundColor: '#808083',
+          barBorderColor: '#808083',
+          buttonArrowColor: '#CCC',
+          buttonBackgroundColor: '#606063',
+          buttonBorderColor: '#606063',
+          rifleColor: '#FFF',
+          trackBackgroundColor: '#404043',
+          trackBorderColor: '#404043'
+       },
+       // special colors for some of the
+       legendBackgroundColor: 'rgba(0, 0, 0, 0.5)',
+       background2: '#505053',
+       dataLabelsColor: '#B0B0B3',
+       textColor: '#C0C0C0',
+       contrastTextColor: '#F0F0F3',
+       maskColor: 'rgba(255,255,255,0.3)'
+    };
+    // Apply the theme
+    Highcharts.setOptions(Highcharts.theme);
+
+    </script>
+</html>
